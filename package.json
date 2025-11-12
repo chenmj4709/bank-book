@@ -1,0 +1,19 @@
+{
+  "name": "bank-book",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "version-patch": "npm --no-git-tag-version version patch && npm run tag",
+    "version-patch-mac": "npm --no-git-tag-version version patch && npm run tag-mac",
+    "version-minor": "npm --no-git-tag-version version minor && npm run tag",
+    "version-minor-mac": "npm --no-git-tag-version version minor && npm run tag-mac",
+    "version-major": "npm --no-git-tag-version version major && npm run tag",
+    "version-major-mac": "npm --no-git-tag-version version major && npm run tag-mac",
+    "tag": "node build/version.mjs && git add web/package.json package.json && git commit -m \"v%npm_package_version%\" && git tag -m \"v%npm_package_version%\" \"v%npm_package_version%\" && git push --follow-tags",
+    "tag-mac": "node build/version.mjs && git add web/package.json package.json && git commit -m \"v${npm_package_version}\" && git tag -m \"v${npm_package_version}\" \"v${npm_package_version}\" && git push --follow-tags"
+  },
+  "dependencies": {
+    "html2canvas": "^1.4.1"
+  }
+}
