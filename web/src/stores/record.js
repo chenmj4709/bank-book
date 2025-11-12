@@ -5,8 +5,9 @@ import {
   addRecord as addRecordApi,
   updateRecord as updateRecordApi,
   deleteRecord as deleteRecordApi,
-  getStats
- } from '@/api/record'
+  getStats,
+  getRecentConsumptions
+} from '@/api/record'
 
 export const useRecordStore = defineStore('record', () => {
   const records = ref([])
@@ -91,6 +92,16 @@ export const useRecordStore = defineStore('record', () => {
     }
   }
 
+  const fetchRecentConsumptions = async ({ card_id, swipe_type_id, limit = 3 }) => {
+    try {
+      const ret = await getRecentConsumptions({ params: { card_id, swipe_type_id, limit } })
+      return { success: true, data: ret.list || [] }
+    } catch (error) {
+      console.error('获取最近消费记录错误:', error)
+      throw error
+    }
+  }
+
   // 设置分页
   const setPagination = (page, limit) => {
     pagination.value.page = page
@@ -122,6 +133,7 @@ export const useRecordStore = defineStore('record', () => {
     updateRecord,
     deleteRecord,
     fetchStats,
+    fetchRecentConsumptions,
     setPagination,
     resetRecords,
     loadMoreRecords

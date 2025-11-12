@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted, computed, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import anime from 'animejs'
 
@@ -175,6 +175,20 @@ onMounted(async () => {
       easing: 'easeOutQuart'
     }, '-=300')
 })
+
+const recentConsumptions = ref([])
+watch(
+  () => [form.value.card_id, form.value.swipe_type_id, form.value.record_type],
+  async ([cardId, swipeTypeId, recordType]) => {
+    if (recordType === '支付' && cardId && swipeTypeId) {
+      const { data } = await recordStore.fetchRecentConsumptions({ card_id: cardId, swipe_type_id: swipeTypeId, limit: 3 })
+      recentConsumptions.value = data
+    } else {
+      recentConsumptions.value = []
+    }
+  },
+  { immediate: true }
+)
 </script>
 
 <template>
@@ -286,7 +300,7 @@ onMounted(async () => {
       </div>
 
       <!-- 消费描述 -->
-      <div v-show="isPay" class="form-section opacity-0">
+      <div class="form-section opacity-0">
         <h3 class="text-lg font-bold text-gray-900 font-body mb-4 px-2">消费描述</h3>
         <input
           v-model="form.description"
@@ -340,12 +354,18 @@ onMounted(async () => {
           </button>
         </div>
 
-        <!-- 前3次提示 -->
-        <div v-if="!showAllTypes" class="mt-3 px-2">
-          <p class="text-xs text-gray-500">
+        <div v-if="isPay && recentConsumptions && recentConsumptions.length" class="mt-3 px-2">
+          <p class="text-xs text-gray-500 mb-2">
             <i class="fas fa-lightbulb mr-1"></i>
-            显示最近3次消费类型
+            最近3次消费类型：
           </p>
+          <ul class="space-y-1">
+            <li v-for="(r, idx) in recentConsumptions" :key="idx" class="text-xs text-gray-600 flex items-center justify-between">
+              <span class="text-gray-500">{{ new Date(r.trade_date).toLocaleString() }}</span>
+              <span class="px-2 text-gray-700">{{ r.consumption_type_name || '未知类型' }}</span>
+              <span class="text-purple-600 font-medium">¥ {{ Number(r.amount).toFixed(2) }}</span>
+            </li>
+          </ul>
         </div>
       </div>
 

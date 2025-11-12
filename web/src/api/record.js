@@ -10,3 +10,4 @@ export const deleteRecord = (recordId) => {
   return resource(`/record/delete/${recordId}`, { method: 'delete' })()
 }
 export const getStats = resource('/record/stats', { method: 'get' })
+export const getRecentConsumptions = resource('/record/recent-consumptions', { method: 'get' })

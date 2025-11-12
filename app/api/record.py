@@ -91,10 +91,10 @@ async def add_record(
         if record_type not in ["支付", "还款"]:
             return handle_error(ErrorCode.INVALID_PARAMS, "记录类型不合法")
         
-        if not all([card_id, amount]):
+        if not all([card_id, amount, swipe_type_id]):
             return handle_error(ErrorCode.INVALID_PARAMS, "缺少必要参数")
         
-        if record_type == "支付" and not all([swipe_type_id, consumption_type_id]):
+        if record_type == "支付" and not all([consumption_type_id]):
             return handle_error(ErrorCode.INVALID_PARAMS, "缺少必要参数")
         
         # 验证信用卡、类型
@@ -118,15 +118,13 @@ async def add_record(
                 return handle_error(ErrorCode.INVALID_PARAMS, "消费类型不存在或不可用")
             consumption_type_name = consumption_type.name
         
-        swipe_type_name = None
-        if swipe_type_id: 
-            swipe_type = await SwipeType.find_one({
-                "_id": swipe_type_id,
-                "is_active": True
-            })
-            if not swipe_type:
-                return handle_error(ErrorCode.INVALID_PARAMS, "刷卡类型不存在或不可用")
-            swipe_type_name = swipe_type.name
+        swipe_type = await SwipeType.find_one({
+            "_id": swipe_type_id,
+            "is_active": True
+        })
+        if not swipe_type:
+            return handle_error(ErrorCode.INVALID_PARAMS, "刷卡类型不存在或不可用")
+        swipe_type_name = swipe_type.name
         
         # 时间
         if trade_date:
@@ -163,6 +161,7 @@ async def add_record(
                 filter={
                     "user_id": user_id,
                     "card_id": card_id,
+                    "swipe_type_id": swipe_type_id,
                     "record_type": "支付",
                     "status": {"$in": ["未还", "部分还"]},
                     "is_active": True
@@ -211,6 +210,7 @@ async def add_record(
                 filter={
                     "user_id": user_id,
                     "card_id": card_id,
+                    "swipe_type_id": swipe_type_id,
                     "record_type": "还款",
                     "status": {"$in": ["未还", "部分还"]},
                     "is_active": True
@@ -418,3 +418,38 @@ async def get_record_stats(
     except Exception as e:
         logger.error(f"获取消费统计失败: {str(e)}")
         return handle_error(ErrorCode.UNKNOWN_ERROR, "获取消费统计失败")
+
+@router.get("/record/recent-consumptions")
+async def get_recent_consumptions(
+    user_id: str = Depends(auth_user),
+    card_id: str = Query(..., description="信用卡ID"),
+    swipe_type_id: str = Query(..., description="刷卡类型ID"),
+    limit: int = Query(3, description="数量")
+):
+    try:
+        records = await Record.find_many(
+            filter={
+                "user_id": user_id,
+                "card_id": card_id,
+                "swipe_type_id": swipe_type_id,
+                "record_type": "支付",
+                "is_active": True
+            },
+            sort=[("trade_date", -1)],
+            limit=limit
+        )
+
+        result = [
+            {
+                "trade_date": r.trade_date.isoformat(),
+                "consumption_type_id": r.consumption_type_id,
+                "consumption_type_name": r.consumption_type_name,
+                "amount": r.amount
+            }
+            for r in records
+        ]
+
+        return {"list": result}
+    except Exception as e:
+        logger.error(f"获取最近消费记录失败: {str(e)}")
+        return handle_error(ErrorCode.UNKNOWN_ERROR, "获取最近消费记录失败")
