@@ -1,0 +1,14 @@
+__pycache__
+
+# macos
+.DS_Store
+**/.DS_Store
+dist
+app/static/
+app/static/assets/
+
+# temp
+temp/
+
+# logs
+logs/
